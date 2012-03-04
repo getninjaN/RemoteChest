@@ -1,0 +1,29 @@
+# #
+# Variables
+#   These are wrapped in % and is used to show important information.
+#   %opencost% - Is used to show how much it costs to open a remote chest.
+#   %setcost% - Is used to show how much it costs to set a remote chest.
+#   
+# #
+# Keys
+#   economy.use (true/false) - Should it cost anything to use RemoteChest?
+#   economy.foropen (true/false) - Should it cost anything to open a remote chest?
+#   economy.forset (true/false) - Should it cost anything to set a remote chest?
+#   economy.opencost (Integer) - How much it should cost to open a remote chest.
+#   economy.setcost (Integer) - How much it should cost to set a remote chest.
+# #
+# Messages
+#   thankyou - The message that is shown when money has been taken from player.
+# #
+
+maxslots: 10
+economy:
+  use: false
+  foropen: false
+  forset: false
+  opencost: 10
+  setcost: 10
+messages:
+  thankyou: Thank you!
+  notaffordopen: You do not afford to open this chest. The cost is %opencost%
+  notaffordset: You do not afford to set this chest. The cost is %setcost%

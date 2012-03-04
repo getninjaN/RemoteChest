@@ -1,0 +1,10 @@
+name: RemoteChest
+main: se.xtralarge.remotechest.RemoteChest
+version: 1.0beta
+author: getninjaN
+depend: [Vault]
+commands:
+  remotechest:
+    description: Allows you to set and open a remote chest.
+    usage: /remotechest [set/open] [x]
+    aliases: [chest,rc,remc,remotec,rchest,remchest]
