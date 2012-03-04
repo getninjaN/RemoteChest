@@ -22,11 +22,16 @@ public class ChestInteractListener implements Listener {
 			Block block = event.getClickedBlock();
 			Player player = event.getPlayer();
 			
+			
 			if(block.getType().getId() == 54) {
-				Location blockLoc = block.getLocation();
-				String blockInfo = blockLoc.getWorld().getName() +","+ blockLoc.getBlockX() +","+ blockLoc.getBlockY() +","+ blockLoc.getBlockZ();
-				
-				rc.setChest(player,blockInfo);
+				if(rc.wg.canBuild(player, block.getLocation())) {
+					Location blockLoc = block.getLocation();
+					String blockInfo = blockLoc.getWorld().getName() +","+ blockLoc.getBlockX() +","+ blockLoc.getBlockY() +","+ blockLoc.getBlockZ();
+					
+					rc.setChest(player,blockInfo);
+				} else {
+					rc.resetChestSet(player);
+				}
 			} else {
 				player.sendMessage("Du måste klicka på en kista");
 			}

@@ -2,7 +2,7 @@ name: RemoteChest
 main: se.xtralarge.remotechest.RemoteChest
 version: 1.0beta
 author: getninjaN
-depend: [Vault]
+depend: [Vault,WorldGuard]
 commands:
   remotechest:
     description: Allows you to set and open a remote chest.

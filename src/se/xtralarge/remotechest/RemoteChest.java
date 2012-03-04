@@ -15,6 +15,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -22,6 +23,8 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.World;
+
+import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 
 public class RemoteChest extends JavaPlugin {
 	public Boolean chestDoSet = false; 
@@ -41,6 +44,7 @@ public class RemoteChest extends JavaPlugin {
 	private Server server;
 	private FileConfiguration config = null;
 	protected PluginManager pm;
+	protected WorldGuardPlugin wg;
 	
 	public static FileConfiguration userdata = null;
 	private static File userdataConfigFile = null;
@@ -50,6 +54,7 @@ public class RemoteChest extends JavaPlugin {
 		
 		this.server = this.getServer();
 		this.pm = this.server.getPluginManager();
+		this.wg = getWorldGuard();
 		
 		this.getConfig().options().copyDefaults(true);
 		saveConfig();
@@ -99,8 +104,7 @@ public class RemoteChest extends JavaPlugin {
 			
 			// CANCEL
 			if(args.length >= 1 && (args[0].equalsIgnoreCase("cancel") || args[0].equalsIgnoreCase("c"))) {
-				chestDoSet = false;
-				selectedslot = 0;
+				resetChestSet(player);
 				
 				player.sendMessage(ChatColor.RED +"- RemoteChest: Avbrutet");
 				
@@ -124,10 +128,10 @@ public class RemoteChest extends JavaPlugin {
 			} else if(maxslots == 1) {
 				selectedslot = 1;
 			} else {
-				selectedslot = 0;
+				selectedslot = -1;
 			}
 			
-			if(selectedslot == 0) {
+			if(selectedslot == -1) {
 				player.sendMessage("Du kan inte använda"+ this.getDescription().getName() +" just nu.");
 			} else if(selectedslot > maxslots) {
 				player.sendMessage("Välj en plats mellan 1 och "+ maxslots +".");
@@ -144,7 +148,7 @@ public class RemoteChest extends JavaPlugin {
 				// CHECK IF THE SLOT HAS DATA
 				if(userdata.isSet(player.getName() +".chest"+ selectedslot)) {
 					player.sendMessage(ChatColor.RED + "DU HAR REDAN SPARAT EN KISTA PÅ DEN HÄR PLATSEN.");
-					player.sendMessage(ChatColor.RED + "För att avbryta använd /remotechest cancel.");
+					player.sendMessage(ChatColor.RED + "För att avbryta använd /remotechest cancel eller använd /remotechest set igen.");
 				}
 				
 				chestDoSet = true;
@@ -160,6 +164,7 @@ public class RemoteChest extends JavaPlugin {
 				    return true;
 				}
 				
+				
 				// DOES THE CHOSEN SLOT EXIST?
 				if(userdata.isSet(player.getName() +".chest"+ selectedslot)) {
 					String[] chestData = userdata.getString(player.getName() +".chest"+ selectedslot).split(",");
@@ -171,9 +176,13 @@ public class RemoteChest extends JavaPlugin {
 					Location chestLocation = new Location(chestWorld, chestX, chestY, chestZ);
 					Block locationBlock = chestLocation.getBlock();
 					
-					if(locationBlock.getType().getId() == 54) {
-						Chest chest = (Chest)chestLocation.getBlock().getState();
-						player.openInventory(chest.getInventory());
+					if(wg.canBuild(player, chestLocation)) {
+						if(locationBlock.getType().getId() == 54) {
+							Chest chest = (Chest)chestLocation.getBlock().getState();
+							player.openInventory(chest.getInventory());
+						}
+					} else {
+						player.sendMessage("Kistan står i en skyddad zon där du inte har tillåtelse.");
 					}
 				} else {
 					player.sendMessage("- Ingen kista hittades på plats "+ selectedslot);
@@ -193,6 +202,16 @@ public class RemoteChest extends JavaPlugin {
 		return (economy != null);
 	}
 	
+	private WorldGuardPlugin getWorldGuard() {
+		Plugin plugin = pm.getPlugin("WorldGuard");
+		
+		if (plugin == null || !(plugin instanceof WorldGuardPlugin)) {
+			return null; // Maybe you want throw an exception instead
+	    }
+		
+		return (WorldGuardPlugin) plugin;
+	}
+	
 	private static String parseMessage(String message) {
 		String parsedString = message;
 		
@@ -208,8 +227,14 @@ public class RemoteChest extends JavaPlugin {
 		
 		player.sendMessage("Kista sparad på plats "+ selectedslot);
 		
-		selectedslot = 0;
+		resetChestSet(player);
+	}
+	
+	public void resetChestSet(Player player) {
 		chestDoSet = false;
+		selectedslot = -1;
+		
+		player.sendMessage("RemoteChest: Avbrutet.");
 	}
 	
 	/* CUSTOM CONFIG STUFF */
