@@ -3,17 +3,33 @@
 #   These are wrapped in % and is used to show important information.
 #   %opencost% - Is used to show how much it costs to open a remote chest.
 #   %setcost% - Is used to show how much it costs to set a remote chest.
+#   %chestslot% - Is used to show which slot a chest was saved to.
+#   %maxslots% - Is used to show the max amount of slots available.
+#   %plugin% - Is used to show the plugin name (RemoteChest).
 #   
 # #
 # Keys
 #   economy.use (true/false) - Should it cost anything to use RemoteChest?
-#   economy.foropen (true/false) - Should it cost anything to open a remote chest?
-#   economy.forset (true/false) - Should it cost anything to set a remote chest?
-#   economy.opencost (Integer) - How much it should cost to open a remote chest.
-#   economy.setcost (Integer) - How much it should cost to set a remote chest.
+#   economy.foropen (true/false) - Should it cost anything to open a remote chest? (IS USELESS IF economy.use IS false)
+#   economy.forset (true/false) - Should it cost anything to set a remote chest? (IS USELESS IF economy.use IS false)
+#   economy.opencost (Integer) - How much it should cost to open a remote chest. (IS ONLY USED IF economy.use AND economy.foropen IS true)
+#   economy.setcost (Integer) - How much it should cost to set a remote chest. (IS ONLY USED IF economy.use AND economy.forset IS true)
 # #
 # Messages
-#   thankyou - The message that is shown when money has been taken from player.
+#   notaffordopen - The message that is shown when player does not have enough money to open a remote chest
+#   openwithdraw - The message that is shown when money is withdrawn, when opening a chest, from player
+#   notaffordset - The message that is shown when player does not have enough money to set a remote chest
+#   setwithdraw - The message that is shown when money is withdrawn, when setting a chest, from player
+#   chestset - The message that is shown when a chest is set
+#   setaborted - The mssage that is shown when someone uses the /remotechest cancel
+#   chooseslot - The message that is shown if no slot is chosen or if slot is invalid
+#   choosebetween - The message that is shown if not slot is chosen or if slot is invalid and maxslots is more than 1
+#   cantuse - The message that is shown if maxslots is lesser than 1 and maybe in other cases as well.
+#   slottaken - Is shown together with takenabort and is shown when a chest is saved on selected slot
+#   takenabort - Read slottaken
+#   clickchest - The message that is shown when setting a chest
+#   chestprotected - The message that is shown when setting a chest and selected chest is in protected area
+#   chestnotfound - The message that is shown when opening a chest and chest can not be found.
 # #
 
 maxslots: 10
@@ -23,7 +39,20 @@ economy:
   forset: false
   opencost: 10
   setcost: 10
+  depositto: Corningstone
 messages:
   thankyou: Thank you!
   notaffordopen: You do not afford to open this chest. The cost is %opencost%
+  openwithdraw: Thank you! %opencost% has been withdrawn from your account.
   notaffordset: You do not afford to set this chest. The cost is %setcost%
+  setwithdraw: Thank you! %setcost% has been widthdrawn from your account.
+  chestset: Chest is saved on slot %chestslot%
+  setaborted: Chest set has been aborted. Nothing saved!
+  chooseslot: You have to choose a slot.
+  choosebetween: Choose a slot between 1 and %maxslots%
+  cantuse: You can not use %plugin% at the moment.
+  slottaken: A CHEST IS ALREADY SAVED ON THIS SLOT
+  takenabort: To abort use /remotechest cancel or use the /remotechest set again
+  clickchest: Interact with the chest you want to save on slot %chestslot%
+  chestprotected: The selected chest is in a protected area. 
+  chestnotfound: No chest was found in slot %chestslot%

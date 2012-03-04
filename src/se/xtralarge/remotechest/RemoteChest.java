@@ -37,12 +37,13 @@ public class RemoteChest extends JavaPlugin {
 	private static int opencost = 0;
 	private static int setcost = 0;
 	private static int maxslots = 0;
+	private static String depositto = "";
 	
 	public static int selectedslot;
 	
 	private double balance;
 	private Server server;
-	private FileConfiguration config = null;
+	public FileConfiguration config = null;
 	protected PluginManager pm;
 	protected WorldGuardPlugin wg;
 	
@@ -68,6 +69,7 @@ public class RemoteChest extends JavaPlugin {
 		opencost = config.getInt("economy.opencost");
 		setcost = config.getInt("economy.setcost");
 		maxslots = config.getInt("maxslots");
+		depositto = config.getString("economy.depositto");
 		
 		setupEconomy();
 		
@@ -104,9 +106,8 @@ public class RemoteChest extends JavaPlugin {
 			
 			// CANCEL
 			if(args.length >= 1 && (args[0].equalsIgnoreCase("cancel") || args[0].equalsIgnoreCase("c"))) {
-				resetChestSet(player);
-				
-				player.sendMessage(ChatColor.RED +"- RemoteChest: Avbrutet");
+				String message = config.getString("messages.setaborted");
+				resetChestSet(player,message);
 				
 				return true;
 			}
@@ -114,13 +115,13 @@ public class RemoteChest extends JavaPlugin {
 			// DO SOME SLOT CHECKS
 			if(maxslots > 1) {
 				if(args.length < 2) {
-					player.sendMessage(ChatColor.RED +"- Du måste välja en plats.");
+					player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.chooseslot")));
 					return false;
 				} else {
 					try {
 						selectedslot = Integer.parseInt(args[1]);
 					} catch(NumberFormatException nFE) {
-						player.sendMessage("Välj en plats mellan 1 och "+ maxslots +".");
+						player.sendMessage(parseMessage(config.getString("messages.choosebetween")));
 						
 						return true;
 					}
@@ -132,9 +133,9 @@ public class RemoteChest extends JavaPlugin {
 			}
 			
 			if(selectedslot == -1) {
-				player.sendMessage("Du kan inte använda"+ this.getDescription().getName() +" just nu.");
+				player.sendMessage(parseMessage(config.getString("messages.cantuse")));
 			} else if(selectedslot > maxslots) {
-				player.sendMessage("Välj en plats mellan 1 och "+ maxslots +".");
+				player.sendMessage(parseMessage(config.getString("messages.choosebetween")));
 			}
 			
 			// SET
@@ -147,12 +148,12 @@ public class RemoteChest extends JavaPlugin {
 				
 				// CHECK IF THE SLOT HAS DATA
 				if(userdata.isSet(player.getName() +".chest"+ selectedslot)) {
-					player.sendMessage(ChatColor.RED + "DU HAR REDAN SPARAT EN KISTA PÅ DEN HÄR PLATSEN.");
-					player.sendMessage(ChatColor.RED + "För att avbryta använd /remotechest cancel eller använd /remotechest set igen.");
+					player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.slottaken")));
+					player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.takenabort")));
 				}
 				
 				chestDoSet = true;
-				player.sendMessage("Klicka på den kista som du vill spara på plats "+ selectedslot);
+				player.sendMessage(parseMessage(config.getString("messages.clickchest")));
 				
 				return true;
 				
@@ -180,12 +181,21 @@ public class RemoteChest extends JavaPlugin {
 						if(locationBlock.getType().getId() == 54) {
 							Chest chest = (Chest)chestLocation.getBlock().getState();
 							player.openInventory(chest.getInventory());
+							
+							if(economyuse && economyopen) {
+								double topay = config.getDouble("economy.opencost");
+								
+								economy.withdrawPlayer(player.getName(), topay);
+								if(depositto != null) { economy.depositPlayer(depositto, topay); }
+								
+								player.sendMessage(parseMessage(config.getString("messages.openwithdraw")));
+							}
 						}
 					} else {
-						player.sendMessage("Kistan står i en skyddad zon där du inte har tillåtelse.");
+						player.sendMessage(parseMessage(config.getString("messages.chestprotected")));
 					}
 				} else {
-					player.sendMessage("- Ingen kista hittades på plats "+ selectedslot);
+					player.sendMessage(parseMessage(config.getString("messages.chestnotfound")));
 				}
 				
 				return true;
@@ -212,29 +222,49 @@ public class RemoteChest extends JavaPlugin {
 		return (WorldGuardPlugin) plugin;
 	}
 	
-	private static String parseMessage(String message) {
+	public String parseMessage(String message) {
 		String parsedString = message;
 		
 		parsedString = parsedString.replaceAll("%setcost%", setcost +"");
 		parsedString = parsedString.replaceAll("%opencost%", opencost +"");
+		parsedString = parsedString.replaceAll("%chestslot%",selectedslot +"");
+		parsedString = parsedString.replaceAll("%maxslots%", maxslots +"");
+		parsedString = parsedString.replaceAll("%plugin%", this.getDescription().getName());
+		parsedString = parsedString.replaceAll("%maxslots%", maxslots +"");
 		
 		return parsedString;
 	}
 	
 	public void setChest(Player player, String chestInfo) {
+		Boolean widthdraw = false;
+		
+		if(economyuse && economyset) {
+			if(userdata.getString(player.getName() +".chest"+ selectedslot) == null) {
+				widthdraw = true;
+			}
+		}
+		
+		String message = config.getString("messages.chestset");
 		userdata.set(player.getName() +".chest"+ selectedslot, chestInfo);
 		saveUserdata();
 		
-		player.sendMessage("Kista sparad på plats "+ selectedslot);
+		if(widthdraw) {
+			double topay = config.getDouble("economy.setcost");
+			
+			economy.withdrawPlayer(player.getName(), topay);
+			if(depositto != null) { economy.depositPlayer(depositto, topay); }
+			
+			player.sendMessage(parseMessage(config.getString("messages.setwithdraw")));
+		}
 		
-		resetChestSet(player);
+		resetChestSet(player,message);
 	}
 	
-	public void resetChestSet(Player player) {
+	public void resetChestSet(Player player, String message) {
+		player.sendMessage(parseMessage(message));
+		
 		chestDoSet = false;
 		selectedslot = -1;
-		
-		player.sendMessage("RemoteChest: Avbrutet.");
 	}
 	
 	/* CUSTOM CONFIG STUFF */
@@ -283,6 +313,7 @@ public class RemoteChest extends JavaPlugin {
 		economyset = config.getBoolean("economy.forset");
 		opencost = config.getInt("economy.opencost");
 		setcost = config.getInt("economy.setcost");
+		depositto = config.getString("economy.depositto");
 		sender.sendMessage(this.getDescription().getFullName() +" has been reloaded.");
 	}
 }
