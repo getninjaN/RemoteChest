@@ -216,11 +216,12 @@ public class RemoteChest extends JavaPlugin {
 	}
 	
 	public void setChest(Player player, String chestInfo) {
-		Boolean widthdraw = false;
+		Boolean withdraw = false;
+		double topay = config.getDouble("economy.setcost");
 		
 		if(economyuse && economyset) {
 			if(userdata.getString(player.getName() +".chest"+ selectedSlots.get(player.getName())) == null) {
-				widthdraw = true;
+				withdraw = true;
 			}
 		}
 		
@@ -228,14 +229,7 @@ public class RemoteChest extends JavaPlugin {
 		userdata.set(player.getName() +".chest"+ selectedSlots.get(player.getName()), chestInfo);
 		saveUserdata();
 		
-		if(widthdraw) {
-			double topay = config.getDouble("economy.setcost");
-			
-			economy.withdrawPlayer(player.getName(), topay);
-			if(depositto != null) { economy.depositPlayer(depositto, topay); }
-			
-			player.sendMessage(parseMessage(config.getString("messages.setwithdraw"),player.getName()));
-		}
+		withdraw(player,withdraw,topay);
 		
 		resetChestSet(player,message);
 	}
@@ -253,13 +247,13 @@ public class RemoteChest extends JavaPlugin {
 		//selectedslot = -1;
 	}
 	
-	public void widthdraw(Player player) {
-		double topay = config.getDouble("economy.opencost");
-		
-		economy.withdrawPlayer(player.getName(), topay);
-		if(depositto != null) { economy.depositPlayer(depositto, topay); }
-		
-		player.sendMessage(parseMessage(config.getString("messages.openwithdraw"),player.getName()));
+	public void withdraw(Player player, Boolean withdraw, double amount) {
+		if(withdraw) {
+			economy.withdrawPlayer(player.getName(), amount);
+			if(depositto != null) { economy.depositPlayer(depositto, amount); }
+			
+			player.sendMessage(parseMessage(config.getString("messages.openwithdraw"),player.getName()));
+		}
 	}
 	
 	/* CUSTOM CONFIG STUFF */

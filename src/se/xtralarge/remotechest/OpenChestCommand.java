@@ -31,7 +31,9 @@ public class OpenChestCommand {
 					player.openInventory(chest.getInventory());
 					
 					if(rc.economyuse && rc.economyopen) {
-						rc.widthdraw(player);
+						double topay = rc.config.getDouble("economy.opencost");
+						
+						rc.withdraw(player,true,topay);
 					}
 				}
 			} else {
