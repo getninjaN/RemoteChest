@@ -26,12 +26,11 @@ import org.bukkit.Server;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 
 public class RemoteChest extends JavaPlugin {
-	//public Boolean chestDoSet = false;
-	public ArrayList<Player> chestSetQueue = new ArrayList<Player>();
-	public HashMap<String, Integer> selectedSlots = new HashMap<String, Integer>();
+	public ArrayList<Player> chestSetQueue = new ArrayList<Player>(); // Chest set queue containing users wanting to set a chest
+	public HashMap<String, Integer> selectedSlots = new HashMap<String, Integer>(); // HashMap containing users selected slot
 	
 	private static Logger log = Logger.getLogger("Minecraft"); // Log
-	public static Economy economy = null;
+	public static Economy economy = null; // Economy plug-in
 	
 	public Boolean economyuse;
 	public Boolean economyopen;
@@ -40,8 +39,6 @@ public class RemoteChest extends JavaPlugin {
 	private static int setcost = 0;
 	private static int maxslots = 0;
 	private static String depositto = "";
-	
-	//public static int selectedslot;
 	
 	private double balance;
 	private Server server;
@@ -134,8 +131,6 @@ public class RemoteChest extends JavaPlugin {
 				} else {
 					try {
 						selectedSlots.put(player.getName(), Integer.parseInt(args[1]));
-						
-						//selectedslot = Integer.parseInt(args[1]);
 					} catch(NumberFormatException nFE) {
 						player.sendMessage(parseMessage(config.getString("messages.choosebetween"),player.getName()));
 						
@@ -144,10 +139,8 @@ public class RemoteChest extends JavaPlugin {
 				}
 			} else if(maxslots == 1) {
 				selectedSlots.put(player.getName(), 1);
-				//selectedslot = 1;
 			} else {
 				selectedSlots.remove(player.getName());
-				//selectedslot = -1;
 			}
 			
 			if(!selectedSlots.containsKey(player.getName())) {
@@ -176,7 +169,6 @@ public class RemoteChest extends JavaPlugin {
 				}
 				
 				boolean openChest = open.openChest(player);
-				
 				
 				return openChest;
 			}
@@ -225,7 +217,7 @@ public class RemoteChest extends JavaPlugin {
 			}
 		}
 		
-		String message = config.getString("messages.chestset");
+		String message = ChatColor.GREEN + config.getString("messages.chestset");
 		userdata.set(player.getName() +".chest"+ selectedSlots.get(player.getName()), chestInfo);
 		saveUserdata();
 		
@@ -244,7 +236,6 @@ public class RemoteChest extends JavaPlugin {
 		}
 		
 		selectedSlots.remove(player.getName());
-		//selectedslot = -1;
 	}
 	
 	public void withdraw(Player player, Boolean withdraw, double amount) {
@@ -292,7 +283,7 @@ public class RemoteChest extends JavaPlugin {
 			Logger.getLogger(JavaPlugin.class.getName()).log(Level.SEVERE, "Could not save config to " + userdataConfigFile, ex);
 		}
 	}
-	/* CUSTOM CONFIG STUFF */
+	/* END OF CUSTOM CONFIG STUFF */
 	
 	private void configReload(CommandSender sender) {
 		this.reloadConfig();

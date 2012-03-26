@@ -58,3 +58,4 @@ messages:
   chestprotected: The selected chest is in a protected area. 
   chestnotfound: No chest was found in slot %chestslot%
   notincreative: This command is not available in Creative.
+  chestgone: Chest not found. Maybe it has been removed?
