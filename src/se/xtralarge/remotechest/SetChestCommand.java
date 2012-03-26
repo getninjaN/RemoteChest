@@ -17,7 +17,10 @@ public class SetChestCommand {
 			player.sendMessage(ChatColor.RED + rc.parseMessage(rc.config.getString("messages.takenabort"),player.getName()));
 		}
 		
-		rc.chestSetQueue.add(player);
+		if(!rc.chestSetQueue.contains(player)) {
+			rc.chestSetQueue.add(player);
+		}
+		
 		player.sendMessage(rc.parseMessage(rc.config.getString("messages.clickchest"),player.getName()));
 		
 		return true;
