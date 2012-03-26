@@ -30,6 +30,7 @@
 #   clickchest - The message that is shown when setting a chest
 #   chestprotected - The message that is shown when setting a chest and selected chest is in protected area
 #   chestnotfound - The message that is shown when opening a chest and chest can not be found.
+#   notincreative - The message that is shown when in creative
 # #
 
 maxslots: 10
@@ -56,3 +57,4 @@ messages:
   clickchest: Interact with the chest you want to save on slot %chestslot%
   chestprotected: The selected chest is in a protected area. 
   chestnotfound: No chest was found in slot %chestslot%
+  notincreative: This command is not available in Creative.

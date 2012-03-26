@@ -17,9 +17,10 @@ public class ChestInteractListener implements Listener {
 	
 	@EventHandler
 	public void chestInteract(PlayerInteractEvent event) {
+		if(event.getClickedBlock() == null) { return; }
 		if(event.getClickedBlock().getType().getId() != 54) { return; }
 		
-		if(rc.chestDoSet) {
+		if(rc.chestSetQueue.indexOf(event.getPlayer()) > -1) {
 			Block block = event.getClickedBlock();
 			Player player = event.getPlayer();
 			

@@ -5,11 +5,11 @@ import net.milkbowl.vault.economy.Economy;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.bukkit.block.Block;
-import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -20,26 +20,28 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
+import org.bukkit.GameMode;
 import org.bukkit.Server;
-import org.bukkit.World;
 
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 
 public class RemoteChest extends JavaPlugin {
-	public Boolean chestDoSet = false; 
+	//public Boolean chestDoSet = false;
+	public ArrayList<Player> chestSetQueue = new ArrayList<Player>();
+	public HashMap<String, Integer> selectedSlots = new HashMap<String, Integer>();
+	
 	private static Logger log = Logger.getLogger("Minecraft"); // Log
 	public static Economy economy = null;
 	
-	private static Boolean economyuse;
-	private static Boolean economyopen;
-	private static Boolean economyset;
+	public Boolean economyuse;
+	public Boolean economyopen;
+	public Boolean economyset;
 	private static int opencost = 0;
 	private static int setcost = 0;
 	private static int maxslots = 0;
 	private static String depositto = "";
 	
-	public static int selectedslot;
+	//public static int selectedslot;
 	
 	private double balance;
 	private Server server;
@@ -47,8 +49,11 @@ public class RemoteChest extends JavaPlugin {
 	protected PluginManager pm;
 	protected WorldGuardPlugin wg;
 	
-	public static FileConfiguration userdata = null;
+	public FileConfiguration userdata = null;
 	private static File userdataConfigFile = null;
+	
+	protected SetChestCommand set;
+	protected OpenChestCommand open;
 	
 	public void onEnable(){
 		log.info(this.getDescription().getFullName() +" has been enabled!");
@@ -70,6 +75,9 @@ public class RemoteChest extends JavaPlugin {
 		setcost = config.getInt("economy.setcost");
 		maxslots = config.getInt("maxslots");
 		depositto = config.getString("economy.depositto");
+		
+		set = new SetChestCommand(this);
+		open = new OpenChestCommand(this);
 		
 		setupEconomy();
 		
@@ -101,6 +109,12 @@ public class RemoteChest extends JavaPlugin {
 				return true;
 			}
 			
+			if(player.getGameMode() == GameMode.CREATIVE) {
+				sender.sendMessage(parseMessage(config.getString("messages.notincreative"),player.getName()));
+				
+				return true;
+			}
+			
 			// GET BALANCE
 			if(economyuse && economy != null) { balance = economy.getBalance(player.getName()); }
 			
@@ -115,90 +129,56 @@ public class RemoteChest extends JavaPlugin {
 			// DO SOME SLOT CHECKS
 			if(maxslots > 1) {
 				if(args.length < 2) {
-					player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.chooseslot")));
+					player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.chooseslot"),player.getName()));
 					return false;
 				} else {
 					try {
-						selectedslot = Integer.parseInt(args[1]);
+						selectedSlots.put(player.getName(), Integer.parseInt(args[1]));
+						
+						//selectedslot = Integer.parseInt(args[1]);
 					} catch(NumberFormatException nFE) {
-						player.sendMessage(parseMessage(config.getString("messages.choosebetween")));
+						player.sendMessage(parseMessage(config.getString("messages.choosebetween"),player.getName()));
 						
 						return true;
 					}
 				}
 			} else if(maxslots == 1) {
-				selectedslot = 1;
+				selectedSlots.put(player.getName(), 1);
+				//selectedslot = 1;
 			} else {
-				selectedslot = -1;
+				selectedSlots.remove(player.getName());
+				//selectedslot = -1;
 			}
 			
-			if(selectedslot == -1) {
-				player.sendMessage(parseMessage(config.getString("messages.cantuse")));
-			} else if(selectedslot > maxslots) {
-				player.sendMessage(parseMessage(config.getString("messages.choosebetween")));
+			if(!selectedSlots.containsKey(player.getName())) {
+				player.sendMessage(parseMessage(config.getString("messages.cantuse"),player.getName()));
+			} else if(selectedSlots.get(player.getName()) > maxslots) {
+				player.sendMessage(parseMessage(config.getString("messages.choosebetween"),player.getName()));
 			}
 			
 			// SET
 			if(args.length >= 1 && (args[0].equalsIgnoreCase("set") || args[0].equalsIgnoreCase("s"))) {
 				if (((economyuse && economyset) && economy != null) && balance < setcost) {
-				    player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.notaffordset")));
-				    //ChatColor.RED + "- Du har inte råd att köpa sol... Det kostar "+ setcost +"c!"
+				    player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.notaffordset"),player.getName()));
 				    return true;
 				}
 				
-				// CHECK IF THE SLOT HAS DATA
-				if(userdata.isSet(player.getName() +".chest"+ selectedslot)) {
-					player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.slottaken")));
-					player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.takenabort")));
-				}
+				boolean setChest = set.setChest(player);
 				
-				chestDoSet = true;
-				player.sendMessage(parseMessage(config.getString("messages.clickchest")));
-				
-				return true;
+				return setChest;
 				
 			// OPEN
 			} else if(args.length >= 1 && (args[0].equalsIgnoreCase("open") || args[0].equalsIgnoreCase("o"))) {
 				// CHECK IF ECONOMY AND IF BALANCE
 				if (((economyuse && economyopen) && economy != null) && balance < opencost) {
-				    player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.notaffordopen")));
+				    player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.notaffordopen"),player.getName()));
 				    return true;
 				}
 				
+				boolean openChest = open.openChest(player);
 				
-				// DOES THE CHOSEN SLOT EXIST?
-				if(userdata.isSet(player.getName() +".chest"+ selectedslot)) {
-					String[] chestData = userdata.getString(player.getName() +".chest"+ selectedslot).split(",");
-					World chestWorld = this.server.getWorld(chestData[0]);
-					double chestX = Double.parseDouble(chestData[1]);
-					double chestY = Double.parseDouble(chestData[2]);
-					double chestZ = Double.parseDouble(chestData[3]);
-					
-					Location chestLocation = new Location(chestWorld, chestX, chestY, chestZ);
-					Block locationBlock = chestLocation.getBlock();
-					
-					if(wg.canBuild(player, chestLocation)) {
-						if(locationBlock.getType().getId() == 54) {
-							Chest chest = (Chest)chestLocation.getBlock().getState();
-							player.openInventory(chest.getInventory());
-							
-							if(economyuse && economyopen) {
-								double topay = config.getDouble("economy.opencost");
-								
-								economy.withdrawPlayer(player.getName(), topay);
-								if(depositto != null) { economy.depositPlayer(depositto, topay); }
-								
-								player.sendMessage(parseMessage(config.getString("messages.openwithdraw")));
-							}
-						}
-					} else {
-						player.sendMessage(parseMessage(config.getString("messages.chestprotected")));
-					}
-				} else {
-					player.sendMessage(parseMessage(config.getString("messages.chestnotfound")));
-				}
 				
-				return true;
+				return openChest;
 			}
 		}
 		
@@ -222,12 +202,12 @@ public class RemoteChest extends JavaPlugin {
 		return (WorldGuardPlugin) plugin;
 	}
 	
-	public String parseMessage(String message) {
+	public String parseMessage(String message, String playerName) {
 		String parsedString = message;
 		
 		parsedString = parsedString.replaceAll("%setcost%", setcost +"");
 		parsedString = parsedString.replaceAll("%opencost%", opencost +"");
-		parsedString = parsedString.replaceAll("%chestslot%",selectedslot +"");
+		parsedString = parsedString.replaceAll("%chestslot%",selectedSlots.get(playerName) +"");
 		parsedString = parsedString.replaceAll("%maxslots%", maxslots +"");
 		parsedString = parsedString.replaceAll("%plugin%", this.getDescription().getName());
 		parsedString = parsedString.replaceAll("%maxslots%", maxslots +"");
@@ -239,13 +219,13 @@ public class RemoteChest extends JavaPlugin {
 		Boolean widthdraw = false;
 		
 		if(economyuse && economyset) {
-			if(userdata.getString(player.getName() +".chest"+ selectedslot) == null) {
+			if(userdata.getString(player.getName() +".chest"+ selectedSlots.get(player.getName())) == null) {
 				widthdraw = true;
 			}
 		}
 		
 		String message = config.getString("messages.chestset");
-		userdata.set(player.getName() +".chest"+ selectedslot, chestInfo);
+		userdata.set(player.getName() +".chest"+ selectedSlots.get(player.getName()), chestInfo);
 		saveUserdata();
 		
 		if(widthdraw) {
@@ -254,17 +234,32 @@ public class RemoteChest extends JavaPlugin {
 			economy.withdrawPlayer(player.getName(), topay);
 			if(depositto != null) { economy.depositPlayer(depositto, topay); }
 			
-			player.sendMessage(parseMessage(config.getString("messages.setwithdraw")));
+			player.sendMessage(parseMessage(config.getString("messages.setwithdraw"),player.getName()));
 		}
 		
 		resetChestSet(player,message);
 	}
 	
 	public void resetChestSet(Player player, String message) {
-		player.sendMessage(parseMessage(message));
+		int queuePosition = chestSetQueue.indexOf(player);
 		
-		chestDoSet = false;
-		selectedslot = -1;
+		player.sendMessage(parseMessage(message,player.getName()));
+		
+		if(queuePosition > -1) {
+			chestSetQueue.remove(queuePosition);
+		}
+		
+		selectedSlots.remove(player.getName());
+		//selectedslot = -1;
+	}
+	
+	public void widthdraw(Player player) {
+		double topay = config.getDouble("economy.opencost");
+		
+		economy.withdrawPlayer(player.getName(), topay);
+		if(depositto != null) { economy.depositPlayer(depositto, topay); }
+		
+		player.sendMessage(parseMessage(config.getString("messages.openwithdraw"),player.getName()));
 	}
 	
 	/* CUSTOM CONFIG STUFF */
