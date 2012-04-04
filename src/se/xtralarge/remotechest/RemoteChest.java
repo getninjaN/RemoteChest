@@ -123,6 +123,20 @@ public class RemoteChest extends JavaPlugin {
 				return true;
 			}
 			
+			// LIST
+			if(args.length >= 1 && (args[0].equalsIgnoreCase("list") || args[0].equalsIgnoreCase("ls"))) {
+				if(player.hasPermission("remotechest.list")) {
+					player.sendMessage("Saved chests:");
+					for(int i=0; i < maxslots; i++) {
+						if(userdata.isSet(player.getName() +".chest"+ i)) {
+							player.sendMessage("Slot "+ i +": "+ userdata.getString(player.getName() +".chest"+ i));
+						}
+					}
+					
+					return true;
+				}
+			}
+			
 			// DO SOME SLOT CHECKS
 			if(maxslots > 1) {
 				if(args.length < 2) {
@@ -151,26 +165,34 @@ public class RemoteChest extends JavaPlugin {
 			
 			// SET
 			if(args.length >= 1 && (args[0].equalsIgnoreCase("set") || args[0].equalsIgnoreCase("s"))) {
-				if (((economyuse && economyset) && economy != null) && balance < setcost) {
-				    player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.notaffordset"),player.getName()));
-				    return true;
+				if(player.hasPermission("remotechest.set")) {
+					if (((economyuse && economyset) && economy != null) && balance < setcost) {
+					    player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.notaffordset"),player.getName()));
+					    return true;
+					}
+					
+					boolean setChest = set.setChest(player);
+					
+					return setChest;
+				} else {
+					resetChestSet(player,"You do not have permission to do that.");
 				}
-				
-				boolean setChest = set.setChest(player);
-				
-				return setChest;
 				
 			// OPEN
 			} else if(args.length >= 1 && (args[0].equalsIgnoreCase("open") || args[0].equalsIgnoreCase("o"))) {
-				// CHECK IF ECONOMY AND IF BALANCE
-				if (((economyuse && economyopen) && economy != null) && balance < opencost) {
-				    player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.notaffordopen"),player.getName()));
-				    return true;
+				if(player.hasPermission("remotechest.open")) {
+					// CHECK IF ECONOMY AND IF BALANCE
+					if (((economyuse && economyopen) && economy != null) && balance < opencost) {
+					    player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.notaffordopen"),player.getName()));
+					    return true;
+					}
+					
+					boolean openChest = open.openChest(player);
+					
+					return openChest;
+				} else {
+					resetChestSet(player,"You do not have permission to do that.");
 				}
-				
-				boolean openChest = open.openChest(player);
-				
-				return openChest;
 			}
 		}
 		
@@ -231,11 +253,8 @@ public class RemoteChest extends JavaPlugin {
 		
 		player.sendMessage(parseMessage(message,player.getName()));
 		
-		if(queuePosition > -1) {
-			chestSetQueue.remove(queuePosition);
-		}
-		
-		selectedSlots.remove(player.getName());
+		if(queuePosition > -1) { chestSetQueue.remove(queuePosition); }
+		if(selectedSlots.containsKey(player.getName())) { selectedSlots.remove(player.getName()); }
 	}
 	
 	public void withdraw(Player player, Boolean withdraw, double amount) {
