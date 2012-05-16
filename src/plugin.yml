@@ -1,6 +1,6 @@
 name: RemoteChest
 main: se.xtralarge.remotechest.RemoteChest
-version: 1.0beta
+version: 1.1beta
 author: getninjaN
 depend: [Vault,WorldGuard]
 commands:
