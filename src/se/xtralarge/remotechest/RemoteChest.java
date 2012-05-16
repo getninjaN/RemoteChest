@@ -6,7 +6,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -126,41 +128,48 @@ public class RemoteChest extends JavaPlugin {
 			// LIST
 			if(args.length >= 1 && (args[0].equalsIgnoreCase("list") || args[0].equalsIgnoreCase("ls"))) {
 				if(player.hasPermission("remotechest.list")) {
-					player.sendMessage("Saved chests:");
-					for(int i=0; i < maxslots; i++) {
-						if(userdata.isSet(player.getName() +".chest"+ i)) {
-							player.sendMessage("Slot "+ i +": "+ userdata.getString(player.getName() +".chest"+ i));
+					Set<String> userSlots = getUserSlots(player.getName());
+					
+					player.sendMessage("Saved chests");
+					player.sendMessage("==============");
+					
+					if(userSlots.size() > 0) {
+						for(String currSlot : userSlots) {
+							player.sendMessage(currSlot.replaceAll("[^0-9]", "") +": "+ userdata.getString(player.getName() +"."+ currSlot));
 						}
+					} else {
+						player.sendMessage("- No slots saved");
 					}
 					
 					return true;
 				}
 			}
 			
-			// DO SOME SLOT CHECKS
-			if(maxslots > 1) {
-				if(args.length < 2) {
-					player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.chooseslot"),player.getName()));
-					return false;
-				} else {
-					try {
-						selectedSlots.put(player.getName(), Integer.parseInt(args[1]));
-					} catch(NumberFormatException nFE) {
-						player.sendMessage(parseMessage(config.getString("messages.choosebetween"),player.getName()));
-						
-						return true;
-					}
-				}
-			} else if(maxslots == 1) {
-				selectedSlots.put(player.getName(), 1);
+			int slotsSet = checkUserSlots(player.getName());
+			
+			if(args.length < 2) {
+				player.sendMessage(ChatColor.RED + parseMessage(config.getString("messages.chooseslot"),player.getName()));
+				return false;
 			} else {
-				selectedSlots.remove(player.getName());
+				try {
+					selectedSlots.put(player.getName(), Integer.parseInt(args[1]));
+				} catch(NumberFormatException nFE) {
+					player.sendMessage(parseMessage(config.getString("messages.choosebetween"),player.getName()));
+					
+					return true;
+				}
 			}
 			
-			if(!selectedSlots.containsKey(player.getName())) {
-				player.sendMessage(parseMessage(config.getString("messages.cantuse"),player.getName()));
-			} else if(selectedSlots.get(player.getName()) > maxslots) {
-				player.sendMessage(parseMessage(config.getString("messages.choosebetween"),player.getName()));
+			if(slotsSet >= maxslots) {
+				if(!userdata.isSet(player.getName() +".chest"+ selectedSlots.get(player.getName()))) {
+					player.sendMessage(ChatColor.RED + "You have reached the amount of slots available!");
+					player.sendMessage(ChatColor.RED + "Use one of the slots already taken.");
+					player.sendMessage(ChatColor.RED + "See free slots with /remotechest list");
+					
+					selectedSlots.remove(player.getName());
+					
+					return true;
+				}
 			}
 			
 			// SET
@@ -177,7 +186,6 @@ public class RemoteChest extends JavaPlugin {
 				} else {
 					resetChestSet(player,"You do not have permission to do that.");
 				}
-				
 			// OPEN
 			} else if(args.length >= 1 && (args[0].equalsIgnoreCase("open") || args[0].equalsIgnoreCase("o"))) {
 				if(player.hasPermission("remotechest.open")) {
@@ -290,6 +298,20 @@ public class RemoteChest extends JavaPlugin {
 		if (userdata == null) {reloadUserdata();}
 		return userdata;
 	}
+	
+	public int checkUserSlots(String playerName) {
+		int userSlots = getUserSlots(playerName).size();
+		
+		return userSlots;
+	}
+	
+	public Set<String> getUserSlots(String playerName) {
+		try {
+			return userdata.getConfigurationSection(playerName).getKeys(false);
+		} catch (Exception e) {
+			return Collections.emptySet();
+		}
+	}
    
 	public void saveUserdata() {
 		if (userdata == null || userdataConfigFile == null) {
@@ -312,7 +334,9 @@ public class RemoteChest extends JavaPlugin {
 		economyset = config.getBoolean("economy.forset");
 		opencost = config.getInt("economy.opencost");
 		setcost = config.getInt("economy.setcost");
+		maxslots = config.getInt("maxslots");
 		depositto = config.getString("economy.depositto");
+		
 		sender.sendMessage(this.getDescription().getFullName() +" has been reloaded.");
 	}
 }
